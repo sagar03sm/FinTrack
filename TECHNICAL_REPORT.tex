@@ -1,0 +1,560 @@
+\documentclass[11pt,a4paper]{article}
+
+% ---------- Packages ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{fancyvrb}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\usepackage{fontawesome5}
+\usepackage{textcomp}
+\usepackage{tabularx}
+
+% ---------- Colors ----------
+\definecolor{primary}{HTML}{2563EB}
+\definecolor{secondary}{HTML}{4B5563}
+\definecolor{codebg}{HTML}{F3F4F6}
+\definecolor{codefg}{HTML}{1F2937}
+\definecolor{rulec}{HTML}{D1D5DB}
+
+% ---------- Hyperref ----------
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    urlcolor=primary,
+    citecolor=primary,
+    pdftitle={FinTrack Technical Report},
+    pdfauthor={Sagar Makwana}
+}
+
+% ---------- Section formatting ----------
+\newcommand{\sectionrule}{\vspace{2pt}\titlerule[0.6pt]}
+\titleformat{\section}
+  {\Large\bfseries\color{primary}}{\thesection}{0.6em}{}
+  [\sectionrule]
+\titleformat{\subsection}
+  {\large\bfseries\color{secondary}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}
+  {\normalsize\bfseries}{\thesubsubsection}{0.4em}{}
+\titlespacing*{\section}{0pt}{14pt}{6pt}
+\titlespacing*{\subsection}{0pt}{10pt}{4pt}
+
+% ---------- Listings (code blocks) ----------
+\lstdefinestyle{plainbox}{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small\color{codefg},
+  breaklines=true,
+  frame=single,
+  framerule=0.4pt,
+  rulecolor=\color{rulec},
+  xleftmargin=8pt,
+  framexleftmargin=8pt,
+  framexrightmargin=8pt,
+  framextopmargin=4pt,
+  framexbottommargin=4pt,
+  showstringspaces=false,
+  columns=fullflexible,
+  keepspaces=true,
+}
+\lstdefinestyle{python}{style=plainbox,language=Python,
+  keywordstyle=\color{primary}\bfseries,
+  commentstyle=\color{secondary}\itshape,
+  stringstyle=\color{green!50!black},
+}
+\lstset{style=plainbox}
+
+% ---------- Inline code ----------
+\newcommand{\code}[1]{\colorbox{codebg}{\strut\texttt{\small #1}}}
+
+% ---------- Document ----------
+\begin{document}
+
+\begin{center}
+  {\Huge\bfseries FinTrack Technical Report}\\[0.4em]
+  {\large\color{secondary} AI-Powered Finance \& Expense Tracking Platform}\\[0.3em]
+  {\small Sagar Makwana \quad\textbar\quad \today}
+\end{center}
+\vspace{0.5em}
+\hrule
+\vspace{1em}
+
+% =====================================================================
+\section{Project Overview}
+
+FinTrack is an AI-powered finance and expense tracking platform built with a modern full-stack architecture. The application enables users to track income and expenses, set budgets, and receive AI-powered financial insights.
+
+% =====================================================================
+\section{Technology Stack}
+
+\subsection{Frontend}
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Framework}: Next.js 14 (App Router)
+  \item \textbf{Language}: TypeScript
+  \item \textbf{Styling}: TailwindCSS
+  \item \textbf{UI Components}: shadcn/ui (Radix UI primitives)
+  \item \textbf{State Management}: TanStack Query (React Query)
+  \item \textbf{Charts}: Recharts
+  \item \textbf{Notifications}: Sonner (toast)
+  \item \textbf{Deployment}: Vercel
+\end{itemize}
+
+\subsection{Backend}
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Framework}: FastAPI
+  \item \textbf{Language}: Python 3.11
+  \item \textbf{Database}: MongoDB (Atlas)
+  \item \textbf{ODM}: Beanie (async MongoDB driver)
+  \item \textbf{Authentication}: JWT (access + refresh tokens)
+  \item \textbf{AI}: Groq API (llama-3.3-70b-versatile) with OpenAI fallback
+  \item \textbf{Logging}: Structlog (JSON logs)
+  \item \textbf{Rate Limiting}: slowapi
+  \item \textbf{Deployment}: Render/Fly
+\end{itemize}
+
+% =====================================================================
+\section{Architecture}
+
+\subsection{Design Pattern: Hexagonal (Clean Architecture)}
+
+The backend follows a hexagonal architecture pattern with clear separation of concerns:
+
+\begin{lstlisting}
+app/
+|-- core/                    # Cross-cutting concerns
+|   |-- config.py           # Configuration management
+|   |-- logging.py          # Structured logging setup
+|   |-- middleware.py       # Request ID middleware
+|   |-- rate_limit.py       # Rate limiting
+|   |-- security.py         # JWT token operations
+|   `-- errors.py           # Domain exceptions
+|-- modules/                 # Feature modules
+|   |-- auth/
+|   |   |-- domain/          # Protocols (repository contracts)
+|   |   |-- application/     # Services and DTOs
+|   |   |-- infrastructure/  # Beanie models and repositories
+|   |   `-- interfaces/http/ # FastAPI routers and deps
+|   |-- users/
+|   |-- categories/
+|   |-- transactions/
+|   |-- budgets/
+|   |-- analytics/
+|   `-- chat/
+|-- db.py                    # Database initialization
+`-- main.py                  # Composition root
+\end{lstlisting}
+
+\subsection{Layer Responsibilities}
+
+\textbf{Core Layer}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Configuration management with Pydantic Settings
+  \item Structured JSON logging with request correlation
+  \item JWT token generation and validation
+  \item Rate limiting per endpoint
+  \item Domain exception to HTTP error translation
+\end{itemize}
+
+\textbf{Module Layers}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item \textbf{Domain} (\code{domain/}): Defines protocols/interfaces (repository contracts)
+  \item \textbf{Application} (\code{application/}): Business logic, DTOs, service orchestration
+  \item \textbf{Infrastructure} (\code{infrastructure/}): Beanie ODM models, MongoDB repository implementations
+  \item \textbf{Interfaces} (\code{interfaces/http/}): FastAPI routers, dependency injection factories
+\end{enumerate}
+
+\subsection{Data Flow}
+
+\begin{lstlisting}
+HTTP Request -> Router -> Service -> Repository -> MongoDB
+                    |
+                    v
+                 DTOs (validation)
+                    |
+                    v
+                 Domain Exceptions -> Error Handler -> HTTP Response
+\end{lstlisting}
+
+% =====================================================================
+\section{Database Schema}
+
+\subsection{Collections}
+
+\textbf{users}
+\begin{lstlisting}[style=python]
+{
+  "email": str (unique),
+  "password_hash": str,
+  "name": str,
+  "role": "user" | "admin",
+  "is_active": bool,
+  "created_at": datetime
+}
+Indexes: email (unique)
+\end{lstlisting}
+
+\textbf{categories}
+\begin{lstlisting}[style=python]
+{
+  "user_id": ObjectId,
+  "name": str,
+  "type": "income" | "expense",
+  "color": str,
+  "created_at": datetime
+}
+Indexes: user_id+name (unique), user_id+type
+\end{lstlisting}
+
+\textbf{transactions}
+\begin{lstlisting}[style=python]
+{
+  "user_id": ObjectId,
+  "type": "income" | "expense",
+  "amount": float,
+  "currency": str,
+  "category_id": ObjectId,
+  "category_name": str,  # denormalized
+  "note": str | null,
+  "date": datetime,
+  "created_at": datetime
+}
+Indexes: user_id+date, user_id+category_id+date, user_id+type+date
+\end{lstlisting}
+
+\textbf{budgets}
+\begin{lstlisting}[style=python]
+{
+  "user_id": ObjectId,
+  "category_id": ObjectId,
+  "month": str (YYYY-MM),
+  "limit": float,
+  "created_at": datetime
+}
+Indexes: user_id+month+category_id (unique)
+\end{lstlisting}
+
+% =====================================================================
+\section{API Endpoints}
+
+\subsection{Authentication}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \code{POST /auth/register} --- User registration with default category seeding
+  \item \code{POST /auth/login} --- Login with email/password, returns JWT tokens
+  \item \code{POST /auth/refresh} --- Refresh access token
+  \item \code{POST /auth/logout} --- Logout (client-side token deletion)
+\end{itemize}
+
+\subsection{Categories}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \code{GET /categories?type=income|expense} --- List user's categories
+  \item \code{POST /categories} --- Create custom category
+  \item \code{PATCH /categories/\{id\}} --- Update category
+  \item \code{DELETE /categories/\{id\}} --- Delete (rejects if transactions reference it)
+\end{itemize}
+
+\subsection{Transactions}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \code{GET /transactions?type=\&category\_id=\&date\_from=\&date\_to=\&limit=\&skip=} --- List with filters and pagination
+  \item \code{POST /transactions} --- Create transaction with category validation and denormalization
+  \item \code{POST /transactions/suggest-category} --- \textbf{AI-powered category suggestion} from a note + type
+  \item \code{GET /transactions/\{id\}} --- Fetch single transaction
+  \item \code{PATCH /transactions/\{id\}} --- Update transaction
+  \item \code{DELETE /transactions/\{id\}} --- Delete transaction
+\end{itemize}
+
+\subsection{Budgets}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \code{GET /budgets?month=YYYY-MM} --- List budgets for month
+  \item \code{POST /budgets} --- Upsert by (month, category\_id)
+  \item \code{DELETE /budgets/\{id\}} --- Delete budget
+\end{itemize}
+
+\subsection{Analytics}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \code{GET /analytics/summary?date\_from=\&date\_to=} --- Total income/expense/net/tx count
+  \item \code{GET /analytics/by-category?date\_from=\&date\_to=} --- Breakdown per category
+  \item \code{GET /analytics/monthly-trend?months=} --- Last N months income/expense/net
+  \item \code{GET /analytics/budget-progress?month=} --- Budget progress per category
+\end{itemize}
+
+\subsection{Chat (AI)}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \code{POST /chat} --- Conversational AI with tool-calling for financial data
+  \item \code{POST /chat/summary} --- AI-generated financial summary (week/month/quarter/year)
+\end{itemize}
+
+\subsection{Meta}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \code{GET /health} --- Application health with version
+  \item \code{GET /ready} --- Dependency health (database, AI provider)
+\end{itemize}
+
+% =====================================================================
+\section{Security}
+
+\subsection{Authentication}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Password hashing with bcrypt (pinned $<$4.1 for compatibility)
+  \item JWT access tokens (15min TTL) and refresh tokens (7 days TTL)
+  \item Token type validation in JWT payload
+  \item Auto-refresh on 401 responses
+\end{itemize}
+
+\subsection{Authorization}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item All protected routes require valid JWT via \code{get\_current\_user} dependency
+  \item User-scoped queries (all operations filtered by user\_id)
+  \item Category ownership validation before transaction creation/update
+\end{itemize}
+
+\subsection{Rate Limiting}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item slowapi with default limits (120/min)
+  \item Per-endpoint configuration available
+  \item 429 response on rate limit exceeded
+\end{itemize}
+
+\subsection{CORS}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Configured whitelist via \code{CORS\_ORIGINS}
+  \item Methods: GET, POST, PATCH, DELETE, OPTIONS
+  \item Headers: Content-Type, Authorization, X-Request-ID
+\end{itemize}
+
+\subsection{Input Validation}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Pydantic models with field validators
+  \item Amount limits (transaction: 10M INR, budget: 100M INR)
+  \item Currency: 3-char validation
+  \item Note: max 500 chars
+  \item Month format: YYYY-MM regex validation
+\end{itemize}
+
+% =====================================================================
+\section{Performance}
+
+\subsection{Database Indexing}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item All frequently queried fields have compound indexes
+  \item Unique indexes prevent duplicates (email, category name, budget keys)
+  \item Date fields indexed descending for time-series queries
+\end{itemize}
+
+\subsection{Pagination}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Transaction list: limit (1--200), skip ($\geq 0$)
+  \item Prevents large result sets from overloading memory
+\end{itemize}
+
+\subsection{Caching}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item TanStack Query caches API responses in frontend
+  \item Configurable stale time and cache time
+\end{itemize}
+
+\subsection{Denormalization}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \code{category\_name} stored in transactions for fast reads without \code{\$lookup}
+  \item Trade-off: requires update on category rename (not implemented)
+\end{itemize}
+
+% =====================================================================
+\section{Observability}
+
+\subsection{Logging}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Structlog with JSON output
+  \item Request ID middleware for correlation
+  \item Contextual logging in services (user\_id, transaction\_id, etc.)
+  \item Log levels: INFO (default), configurable via \code{LOG\_LEVEL}
+\end{itemize}
+
+\subsection{Health Checks}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \code{/health} --- Basic health with version
+  \item \code{/ready} --- Dependency health (database ping, AI provider check)
+\end{itemize}
+
+\subsection{Error Handling}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Domain exceptions (NotFoundError, ValidationError, ConflictError)
+  \item Global exception handler translates to HTTP responses
+  \item Error codes included in response for client handling
+\end{itemize}
+
+% =====================================================================
+\section{AI Integration}
+
+\subsection{Tool-Calling}
+The chat service uses Groq's (OpenAI-compatible) function calling to access real financial data:
+
+\textbf{Available Tools}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item \code{get\_transactions\_summary} --- Fetch transaction totals for date range
+  \item \code{get\_category\_breakdown} --- Spending by category
+  \item \code{get\_budget\_progress} --- Budget status for month
+\end{enumerate}
+
+\textbf{Flow}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item User sends message via \code{/chat} endpoint
+  \item Groq LLM (llama-3.3-70b-versatile) decides which tools to call
+  \item Backend executes tools against MongoDB (user-scoped queries)
+  \item Tool results returned with INR (\rupee) formatted amounts
+  \item AI generates natural language response in INR
+\end{enumerate}
+
+\subsection{Provider Selection}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Service prefers \code{GROQ\_API\_KEY} if present (free, fast inference)
+  \item Falls back to \code{OPENAI\_API\_KEY} if Groq not configured
+  \item Uses AsyncOpenAI client with Groq's OpenAI-compatible endpoint
+\end{itemize}
+
+\subsection{Summary Generation}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Period-based summaries (week, month, quarter, year)
+  \item \code{date\_from} set to midnight to include first-of-month transactions
+  \item Aggregates summary, category breakdown, and budget progress
+  \item System prompt enforces INR currency and current date awareness
+  \item Returns concise recommendations ($<$200 words)
+\end{itemize}
+
+\subsection{AI-Powered Categorization (Bonus)}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Endpoint: \code{POST /transactions/suggest-category}
+  \item Fetches the user's categories filtered by transaction type
+  \item Sends the note + candidate category names to Groq with temperature 0
+  \item Matches LLM response back to a category (exact $\rightarrow$ partial $\rightarrow$ none)
+  \item Returns \code{\{category\_id, category\_name, confidence\}} where confidence is \code{high|medium|low}
+  \item Frontend exposes this via a ``Suggest'' button beside the Note field; toast confirms the choice
+\end{itemize}
+
+\subsection{Real-Time Budget Notifications (Bonus)}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item After every expense creation, the frontend re-queries \code{/analytics/budget-progress} for that month
+  \item Toast warning (yellow) at $\geq$80\% of budget; toast error (red) at $\geq$100\%
+  \item Implemented with Sonner; non-blocking and best-effort (failures swallowed silently)
+  \item No websockets required --- leverages existing analytics endpoint for simplicity and zero added infra
+\end{itemize}
+
+% =====================================================================
+\section{Testing}
+
+\subsection{Backend Tests}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Unit tests for security (JWT hashing, token generation)
+  \item Health check tests
+  \item Located in \code{tests/} directory
+\end{itemize}
+
+\subsection{E2E Tests}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Playwright configuration
+  \item Auth flow tests (register, login, redirect)
+  \item Transaction flow tests (create, list, delete)
+  \item Run with \code{npm run test:e2e} in \code{apps/web}
+\end{itemize}
+
+% =====================================================================
+\section{Deployment}
+
+\subsection{Backend (Render/Fly)}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Build: \code{pip install -e .}
+  \item Start: \code{uvicorn app.main:app --host 0.0.0.0 --port \$PORT}
+  \item Environment variables: MongoDB URI, JWT secret, Groq/OpenAI key, CORS origins
+\end{itemize}
+
+\subsection{Frontend (Vercel)}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item Root directory: \code{apps/web}
+  \item Build: \code{npm run build}
+  \item Environment variable: \code{NEXT\_PUBLIC\_API\_URL}
+\end{itemize}
+
+\subsection{Database}
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item MongoDB Atlas free tier
+  \item IP whitelisting for backend host
+  \item Connection string with retry writes
+\end{itemize}
+
+% =====================================================================
+\section{Product Decisions and Tradeoffs}
+
+\subsection{Why Groq over OpenAI?}
+Groq offers an OpenAI-compatible API with the open-source \code{llama-3.3-70b-versatile} model at zero cost and faster inference than gpt-4o-mini. The service is implemented with fallback to OpenAI to keep flexibility.
+
+\subsection{Why MongoDB?}
+Financial data is naturally document-oriented (transactions, budgets per user). Beanie ODM provides Pydantic-native models that flow cleanly through validation, business logic, and serialization without translation layers.
+
+\subsection{Denormalization of \code{category\_name}}
+Stored on each transaction to avoid \code{\$lookup} joins for list views. Tradeoff: a category rename requires fan-out update (not implemented; acceptable as categories are rarely renamed).
+
+\subsection{Hexagonal Architecture}
+Clear separation of \code{domain} / \code{application} / \code{infrastructure} / \code{interfaces} allows testing services with in-memory fakes (see \code{tests/}). Tradeoff: more boilerplate per module, but pays off as the codebase grows.
+
+\subsection{Date Handling in AI Tools}
+Tool schemas accept \code{YYYY-MM-DD} (Groq's preferred format). Backend normalizes both \code{YYYY-MM-DD} and ISO 8601. The summary endpoint resets \code{date\_from} to midnight so transactions on the first of the month are not excluded --- a bug discovered and fixed during testing.
+
+% =====================================================================
+\section{Challenges Faced}
+
+\begin{enumerate}[leftmargin=*,itemsep=3pt]
+  \item \textbf{Groq date format mismatch}: Tool schemas originally specified \code{date-time} format; Groq returned \code{YYYY-MM-DD}. Resolved by accepting both formats in backend parsing.
+  \item \textbf{Date filter exclusion bug}: Monthly summary used \code{now.replace(day=1)} which kept the current time, accidentally excluding transactions dated \code{2026-05-01 00:00:00}. Fixed by setting time to midnight.
+  \item \textbf{AI currency display}: LLM defaulted to dollars despite system prompt. Fixed by explicitly formatting tool return values with \rupee\ prefix.
+  \item \textbf{Double submission on Enter}: Form's native submit + custom \code{onKeyDown} triggered the handler twice. Resolved by relying on form submit only and adding an \code{isSubmitting} guard.
+  \item \textbf{Stale closure in summary mutation}: \code{onSuccess} referenced an old \code{conversation} snapshot. Fixed with functional \code{setConversation((prev) => ...)}.
+\end{enumerate}
+
+% =====================================================================
+\section{Future Scalability Considerations}
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Read replicas} for MongoDB once query volume grows
+  \item \textbf{Redis} for caching analytics aggregations and AI tool results
+  \item \textbf{Background jobs} (e.g., Arq/Celery) for periodic summary precomputation
+  \item \textbf{CDN} for static assets via Vercel/Cloudflare
+  \item \textbf{Sharding} by \code{user\_id} if user count scales horizontally
+  \item \textbf{Event sourcing} for transaction audit trail
+\end{itemize}
+
+% =====================================================================
+\section{Cost Summary (Free Tier)}
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \textbf{MongoDB Atlas}: Free (512MB storage)
+  \item \textbf{Render}: Free (750 hours/month)
+  \item \textbf{Vercel}: Free (100GB bandwidth/month)
+  \item \textbf{Groq}: Free tier (generous rate limits)
+  \item \textbf{OpenAI} (optional fallback): Pay-as-you-go ($\sim$\$0.15/1M tokens)
+\end{itemize}
+
+\textbf{Total: \$0/month with Groq}
+
+% =====================================================================
+\section{Conclusion}
+
+FinTrack demonstrates a production-ready full-stack application with:
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item Clean hexagonal architecture
+  \item Comprehensive security (JWT, RBAC, rate limiting, CORS, input validation)
+  \item AI-powered insights via Groq with tool calling
+  \item \textbf{Bonus}: AI-powered category suggestion + real-time budget threshold notifications
+  \item Modern UI with shadcn/ui, dark/light theme, search + filtering
+  \item E2E testing with Playwright
+  \item Deployment-ready configuration (Vercel + Render + MongoDB Atlas)
+\end{itemize}
+
+The application is ready for deployment to production environments.
+
+\end{document}
